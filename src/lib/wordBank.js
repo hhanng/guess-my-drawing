@@ -1,0 +1,42 @@
+export const WORD_BANK = [
+  "cat",
+  "house",
+  "tree",
+  "car",
+  "sun",
+  "fish",
+  "star",
+  "boat",
+  "apple",
+  "clock",
+  "flower",
+  "book",
+  "phone",
+  "chair",
+  "dog",
+  "bird",
+  "cloud",
+  "key",
+  "cup",
+  "hat",
+  "shoe",
+  "balloon",
+  "ladder",
+  "bridge",
+  "camera",
+  "guitar",
+  "rocket",
+  "snake",
+  "pizza",
+  "umbrella",
+  "train",
+  "robot",
+  "candle",
+  "kite",
+  "moon",
+];
+
+export function pickWord(exclude) {
+  const pool = WORD_BANK.filter((w) => w !== exclude);
+  return pool[Math.floor(Math.random() * pool.length)];
+}
