@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>hand-tracking smoke</title>
+    <style>
+      body { font: 13px ui-monospace, Menlo, monospace; background: #0b0b0f; color: #ddd; padding: 1rem; }
+      .pass { color: #4ade80; } .fail { color: #ff6b8a; } .info { color: #7aa2ff; }
+    </style>
+  </head>
+  <body>
+    <h1>hand-tracking smoke test</h1>
+    <div id="out"></div>
+    <script type="module">
+      import { createHandDrawer } from "/src/lib/handTracking.js";
+      import * as neon from "/src/lib/neonRender.js";
+
+      const out = document.getElementById("out");
+      const line = (cls, msg) => {
+        const d = document.createElement("div");
+        d.className = cls;
+        d.textContent = msg;
+        out.appendChild(d);
+        console.log(`[SMOKE] ${cls.toUpperCase()} ${msg}`);
+      };
+
+      (async () => {
+        let ok = 0;
+        let bad = 0;
+        const pass = (m) => { ok += 1; line("pass", "PASS " + m); };
+        const fail = (m) => { bad += 1; line("fail", "FAIL " + m); };
+
+        // 1. Modules parsed and imported (no syntax / bad-import errors).
+        pass("handTracking.js module imported, createHandDrawer is " + typeof createHandDrawer);
+        pass(
+          "neonRender.js exports: " +
+            ["fitCanvas", "clearCanvas", "renderTrail", "renderSkeleton", "renderHoldRing"]
+              .filter((k) => typeof neon[k] === "function")
+              .join(", ")
+        );
+
+        // 2. Pure render helpers run against a real canvas without throwing.
+        try {
+          const c = document.createElement("canvas");
+          c.width = 320;
+          c.height = 240;
+          const { ctx, w, h } = neon.fitCanvas(c);
+          neon.clearCanvas(ctx, w, h);
+          neon.renderTrail(
+            ctx,
+            [[{ x: 0.1, y: 0.1 }, { x: 0.5, y: 0.6 }, { x: 0.8, y: 0.2 }]],
+            w,
+            h,
+            performance.now()
+          );
+          neon.renderSkeleton(ctx, [
+            Array.from({ length: 21 }, (_, i) => ({ x: i * 3, y: i * 2 })),
+          ]);
+          neon.renderHoldRing(ctx, { x: 0.5, y: 0.5 }, 0.4, w, h);
+          pass("neon render helpers executed without throwing");
+        } catch (err) {
+          fail("neon render helpers threw: " + err.message);
+        }
+
+        // 3. createHandDrawer boots the MediaPipe HandLandmarker (downloads WASM +
+        //    model). Uses a blank <video> element; detect() should no-op safely
+        //    because the video never reaches readyState 2.
+        try {
+          const video = document.createElement("video");
+          const t0 = performance.now();
+          const drawer = await createHandDrawer(video);
+          line("info", `HandLandmarker initialised in ${Math.round(performance.now() - t0)}ms`);
+          pass("createHandDrawer resolved (MediaPipe model loaded, GPU/WASM ok)");
+
+          const res = drawer.detect(performance.now(), 640, 480);
+          if (res && Array.isArray(res.handsPx) && res.handsPx.length === 0 && res.draw === null) {
+            pass("detect() on a not-ready video returns the safe empty result");
+          } else {
+            fail("detect() returned unexpected shape: " + JSON.stringify(res));
+          }
+          drawer.close();
+          pass("drawer.close() ran without throwing");
+        } catch (err) {
+          fail("createHandDrawer / detect threw: " + (err && err.stack ? err.stack : err));
+        }
+
+        line(bad === 0 ? "pass" : "fail", `DONE — ${ok} passed, ${bad} failed`);
+        document.title = `SMOKE ${bad === 0 ? "OK" : "FAIL"} ${ok}/${ok + bad}`;
+        window.__SMOKE_DONE__ = { ok, bad };
+      })();
+    </script>
+  </body>
+</html>

@@ -21,6 +21,21 @@ npm run dev
 Open the printed URL. Use a webcam-capable browser (Chrome recommended). Open a
 second browser / device and join with the room code to test multiplayer.
 
+### Test harnesses
+
+Dev-only pages under `test/` (not part of the app bundle), run against the dev
+server:
+
+- `test/e2e.html` — drives the real `lib/` modules through a full game against
+  the Firestore project in `.env`: room create/join, live player-list sync,
+  stroke write/stream/read, correct-guess scoring, timeout, drawer rotation,
+  idempotency of the round-end paths, game-over, play-again. Creates and then
+  deletes a throwaway room.
+- `test/handtracking-smoke.html` — confirms the ported `handTracking.js` /
+  `neonRender.js` load, that `createHandDrawer` boots the MediaPipe
+  HandLandmarker, and that the render helpers run without throwing. No webcam
+  or Firebase needed.
+
 ### Firebase
 
 1. Create a Firebase project and add a **Web app**.
