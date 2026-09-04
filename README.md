@@ -1,5 +1,7 @@
 # Guess My Drawing
 
+[![CI](https://github.com/hhanng/guess-my-drawing/actions/workflows/ci.yml/badge.svg)](https://github.com/hhanng/guess-my-drawing/actions/workflows/ci.yml)
+
 Real-time multiplayer Pictionary where the drawer draws with a hand-tracked neon
 trail (MediaPipe HandLandmarker) and everyone else guesses in a text chat. The
 drawing engine is ported from the `neonpoint` project.
