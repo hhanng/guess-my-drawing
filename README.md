@@ -41,23 +41,42 @@ server:
 ### Firebase
 
 1. Create a Firebase project and add a **Web app**.
-2. Enable **Cloud Firestore** (start in test mode for local dev).
+2. Enable **Cloud Firestore**.
 3. Copy the config values into `.env` (all keys are `VITE_`-prefixed so Vite
-   exposes them to the client). No credentials are committed — `.env` is
-   gitignored, only `.env.example` is in the repo, so this is safe to push
-   to a public GitHub repo.
+   exposes them to the client).
 
-Suggested Firestore rules for a quick local playtest (tighten before anything
-public):
+`.env` is gitignored, so keys stay out of the repo and its history. Note that a
+Firebase **web** config is not a secret: Vite inlines these values into the
+built JS, so anything deployed (see below) ships the config in plain text. That
+is expected for client-side Firebase — the real access boundary is the Firestore
+security rules, not the config.
 
+### Firestore security rules
+
+[`firestore.rules`](firestore.rules) locks access to the `/rooms` tree only and
+shape/size-checks every write. There is no auth, so it can't gate on a user —
+it's "reasonable for a public demo", not production-grade. Publish it either way:
+
+```bash
+npx firebase-tools deploy --only firestore:rules   # uses .firebaserc + firebase.json
 ```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{db}/documents {
-    match /rooms/{room}/{document=**} { allow read, write: if true; }
-  }
-}
-```
+
+or paste the file into **Firebase console → Firestore → Rules → Publish**. Do
+this before the 30-day test-mode rules expire.
+
+## Deployment (GitHub Pages)
+
+Pushing to `main` runs [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml):
+it builds with Vite and publishes `dist/` to GitHub Pages. The Firebase config is
+injected at build time from repo **Actions secrets** (`VITE_FIREBASE_*`), so `.env`
+is never needed in CI. `vite.config.js` sets `base: "./"` so the hashed asset
+paths resolve under the `/guess-my-drawing/` project-pages subpath.
+
+One-time setup: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+
+Live: **https://vuhanhan.com/guess-my-drawing/**
+(the account has a user-level custom domain; `https://hhanng.github.io/guess-my-drawing/`
+redirects there).
 
 ## How to play
 
